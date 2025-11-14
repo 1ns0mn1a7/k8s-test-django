@@ -2,6 +2,8 @@
 
 Докеризированный сайт на Django для экспериментов с Kubernetes.
 
+[Ссылка на сайт](https://edu-denis-turishchev.yc-sirius-dev.pelid.team/)
+
 Внутри контейнера Django приложение запускается с помощью Nginx Unit, не путать с Nginx. Сервер Nginx Unit выполняет сразу две функции: как веб-сервер он раздаёт файлы статики и медиа, а в роли сервера-приложений он запускает Python и Django. Таким образом Nginx Unit заменяет собой связку из двух сервисов Nginx и Gunicorn/uWSGI. [Подробнее про Nginx Unit](https://unit.nginx.org/).
 
 ## Как подготовить окружение к локальной разработке
@@ -154,13 +156,13 @@ kubectl get svc
 
 ## Шаг 4: Применение манифестов из репозитория
 
-Все необходимые манифесты для развертывания компонентов уже содержатся в папке kubernetes репозитория.
+Все необходимые манифесты для развертывания компонентов уже содержатся в папке kubernetes_local репозитория.
 
 4.1 Применение манифестов
-Перейдите в папку kubernetes, если вы еще не в ней:
+Перейдите в папку kubernetes_local, если вы еще не в ней:
 
 ```bash
-cd kubernetes
+cd kubernetes_local
 ```
 Внесите изменения в django-secrets.yml.
 Значения необходимо закодировать, пример:
@@ -207,3 +209,53 @@ kubectl get pods
 kubectl get svc
 ```
 Вы должны увидеть поды и сервисы для PostgreSQL, Django и CronJob для удаления устаревших сессий.
+
+## Запуск сайта в Yandex CLoud
+
+https://edu-denis-turishchev.yc-sirius-dev.pelid.team/
+
+[Серверная инфраструктура: edu-denis-turishchev](https://sirius-env-registry.website.yandexcloud.net/edu-denis-turishchev.html)
+
+[Docker образ](https://hub.docker.com/r/1ns0mn1a7/django-app/tags)
+
+Все необходимые манифесты для развертывания компонентов уже содержатся в папке yc-sirius/edu-denis-turishchev репозитория.
+
+5.1 [Установите и инициализируйте](https://yandex.cloud/ru/docs/cli/quickstart#install) интерфейс командной строки Yandex Cloud.
+
+5.2 [Добавьте учетные данные](https://yandex.cloud/ru/docs/managed-kubernetes/operations/connect/#kubectl-connect) кластера Kubernetes в конфигурационный файл kubectl:
+
+5.3 Получите SSL-сертификат для доступа к базе данных PostgreSQL по [инструкции](https://yandex.cloud/ru/docs/managed-postgresql/operations/connect) Yandex Cloud
+
+5.4 Отредактируйте файл django-secrets.yml поставив свои переменные окружения
+
+5.5 Отредактируйте файл django-service.yaml указав в нем необходимый Вам nodePort
+
+5.6 Примените манифесты:
+
+```bash
+kubectl -n <namespace> apply -f yc-sirius/edu-denis-turishchev/django-secrets.yml
+kubectl -n <namespace> apply -f yc-sirius/edu-denis-turishchev/django-deployment.yaml
+kubectl -n <namespace> apply -f yc-sirius/edu-denis-turishchev/django-service.yaml
+```
+
+Применение миграций Django
+
+```bash
+kubectl -n <namespace> apply -f yc-sirius/edu-denis-turishchev/django-migrate.yml
+```
+
+Запуск автоматического удаления устаревших сессий
+
+```bash
+kubectl -n <namespace> apply -f yc-sirius/edu-denis-turishchev/django-clearsession.yml
+```
+
+5.6 Проверка развертывания
+
+Чтобы проверить, что все поды и сервисы развернуты правильно, выполните:
+
+```bash
+kubectl get pods
+kubectl get svc
+```
+Вы должны увидеть поды и сервисы для Django и CronJob для удаления устаревших сессий.
